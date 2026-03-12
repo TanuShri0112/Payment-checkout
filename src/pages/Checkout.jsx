@@ -26,9 +26,13 @@ const Checkout = () => {
         if (sessionId.startsWith('demo_session_')) {
           // Use mock data for demo sessions
           const mockData = {
-            product_name: 'Demo Product',
+            product_name: 'Premium Subscription Plan',
+            product_description: 'Monthly access to all premium features',
             amount: 2999, // $29.99
-            client_secret: 'demo_client_secret_' + Math.random().toString(36).substr(2, 9)
+            client_secret: 'demo_client_secret_' + Math.random().toString(36).substr(2, 9),
+            company_name: 'LMS Athena',
+            company_logo: '�️',
+            order_id: 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase()
           };
           setSessionData(mockData);
         } else {
@@ -81,22 +85,60 @@ const Checkout = () => {
 
   return (
     <div className="checkout-container">
-      <div className="checkout-content">
-        <div className="product-summary">
-          <h2>Order Summary</h2>
-          <div className="product-details">
-            <div className="product-name">{sessionData.product_name}</div>
-            <div className="product-price">${(sessionData.amount / 100).toFixed(2)}</div>
+      <div className="checkout-page">
+        {/* Header */}
+        <div className="checkout-header">
+          <div className="company-info">
+            <span className="company-logo">{sessionData.company_logo || '🏢'}</span>
+            <span className="company-name">{sessionData.company_name || 'TechCorp Solutions'}</span>
+          </div>
+          <div className="order-info">
+            <span className="order-label">Order ID:</span>
+            <span className="order-id">{sessionData.order_id || 'DEMO-ORDER'}</span>
           </div>
         </div>
 
-        <div className="payment-section">
-          <h2>Payment Details</h2>
-          <CardForm 
-            clientSecret={sessionData.client_secret}
-            onPaymentSuccess={handlePaymentSuccess}
-            onPaymentFailed={handlePaymentFailed}
-          />
+        <div className="checkout-content">
+          {/* Product Section */}
+          <div className="product-section">
+            <h3>Product Details</h3>
+            <div className="product-card">
+              <div className="product-info">
+                <h4 className="product-name">{sessionData.product_name}</h4>
+                <p className="product-description">
+                  {sessionData.product_description || 'Digital product with premium features'}
+                </p>
+              </div>
+              <div className="product-price-section">
+                <div className="price-label">Total Amount</div>
+                <div className="product-price">${(sessionData.amount / 100).toFixed(2)}</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Payment Section */}
+          <div className="payment-section">
+            <h3>Payment Information</h3>
+            <div className="payment-card">
+              <div className="payment-header">
+                <span className="payment-title">Secure Payment</span>
+                <span className="secure-badge">🔒 SSL Encrypted</span>
+              </div>
+              <CardForm 
+                clientSecret={sessionData.client_secret}
+                onPaymentSuccess={handlePaymentSuccess}
+                onPaymentFailed={handlePaymentFailed}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="checkout-footer">
+          <p>© 2024 {sessionData.company_name || 'LMS Athena'}. All rights reserved.</p>
+          <div className="payment-methods">
+            <span>Accepted Payment Methods:</span>
+            <span className="payment-icons">💳 Visa • 💳 Mastercard • 💳 Amex</span>
+          </div>
         </div>
       </div>
     </div>

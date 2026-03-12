@@ -13,8 +13,8 @@ const Home = () => {
   return (
     <div className="checkout-container">
       <div className="result-container">
-        <h1>Welcome to Payment Checkout</h1>
-        <p>Complete payment processing with Tilled.js integration</p>
+        <h1>Welcome to LMS Athena Payment</h1>
+        <p>Complete payment processing with secure checkout</p>
         
         <div className="demo-section">
           <h3>Try Demo Checkout</h3>
