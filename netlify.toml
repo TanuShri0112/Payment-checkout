@@ -6,9 +6,14 @@
   NODE_VERSION = "18"
 
 [[redirects]]
+  from = "/checkout/*"
+  to = "/index.html"
+  status = 200
+
+[[redirects]]
   from = "/checkout"
   to = "/index.html"
-  status = 301
+  status = 200
 
 [[redirects]]
   from = "/*"
