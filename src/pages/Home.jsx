@@ -1,0 +1,40 @@
+import React from 'react';
+import { useNavigate } from 'react-router-dom';
+import '../styles/checkout.css';
+
+const Home = () => {
+  const navigate = useNavigate();
+
+  const handleDemoCheckout = () => {
+    // Navigate to checkout with a demo session ID
+    navigate('/checkout?session_id=demo_session_12345');
+  };
+
+  return (
+    <div className="checkout-container">
+      <div className="result-container">
+        <h1>Welcome to Payment Checkout</h1>
+        <p>Complete payment processing with Tilled.js integration</p>
+        
+        <div className="demo-section">
+          <h3>Try Demo Checkout</h3>
+          <p>Click below to test the payment flow with a demo session:</p>
+          <button 
+            className="retry-button" 
+            onClick={handleDemoCheckout}
+          >
+            Start Demo Checkout
+          </button>
+        </div>
+
+        <div className="instructions">
+          <h3>For Development</h3>
+          <p>To test with a specific session ID, navigate to:</p>
+          <code>/checkout?session_id=your_session_id</code>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default Home;
