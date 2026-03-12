@@ -1,0 +1,23 @@
+[build]
+  publish = "dist"
+  command = "npm run build"
+
+[build.environment]
+  NODE_VERSION = "18"
+
+[[redirects]]
+  from = "/checkout"
+  to = "/index.html"
+  status = 301
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 404
+
+[context.production]
+  command = "npm run build"
+
+[context.deploy]
+  command = "npm run build"
+  publish = "dist"
