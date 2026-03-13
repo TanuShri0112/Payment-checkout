@@ -7,46 +7,99 @@ const Checkout = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [tilledConfig, setTilledConfig] = useState(null);
-  const [queryParams, setQueryParams] = useState({});
+  const [sessionData, setSessionData] = useState(null); // New state for session data
 
   useEffect(() => {
-    // Extract query parameters from URL
-    const urlParams = new URLSearchParams(window.location.search);
-    const params = {
-      productId: urlParams.get('productId'),
-      planId: urlParams.get('planId'),
-      userId: urlParams.get('userId'),
-      email: urlParams.get('email')
-    };
-    setQueryParams(params);
+    const fetchCheckoutSession = async () => {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const orderId = urlParams.get('orderId');
+        
+        // Data we might already have from the URL
+        const publishableKeyFromUrl = urlParams.get('publishableKey');
+        const tilledAccountIdFromUrl = urlParams.get('tilledAccountId');
+        const amountFromUrl = urlParams.get('amount');
+        const currencyFromUrl = urlParams.get('currency');
 
-    // Validate required parameters
-    if (!params.productId || !params.planId || !params.userId || !params.email) {
-      setError('Missing required parameters. Please access checkout from the product page.');
-      setLoading(false);
-      return;
-    }
+        // If we have all required Tilled data, just use it
+        if (orderId && publishableKeyFromUrl && tilledAccountIdFromUrl) {
+          setSessionData({
+            order_id: orderId,
+            publishableKey: publishableKeyFromUrl,
+            tilledAccountId: tilledAccountIdFromUrl,
+            amount: parseInt(amountFromUrl) || 0,
+            currency: currencyFromUrl || 'USD',
+            product_name: 'Subscription Payment',
+            company_name: 'LMS Athena',
+            email: urlParams.get('email'),
+            userId: urlParams.get('userId'),
+          });
+          setLoading(false);
+          return;
+        }
 
-    // Fetch Tilled configuration
-    fetchTilledConfig(params.productId);
-  }, []);
+        // If we DON'T have orderId but have productId/planId, initiate it
+        const productId = urlParams.get('productId');
+        const planId = urlParams.get('planId');
+        const userId = urlParams.get('userId');
+        const email = urlParams.get('email');
 
-  const fetchTilledConfig = async (productId) => {
-    try {
-      const response = await fetch(`/api/config?productId=${productId}`);
-      if (!response.ok) {
-        throw new Error('Failed to fetch configuration');
+        if (productId && planId && userId && email) {
+          // Hardcoded for testing as requested
+          const apiKey = 'pk_prod_athenaEbook_20b33599828f71b9a04389c43a4c1a194d47169fc6d98f84d608054fa2ecf632';
+          
+          console.log('Initiating payment session for:', { productId, planId });
+          
+          const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+          const response = await fetch(`${apiBaseUrl}/api/payments`, {
+            method: 'POST',
+            headers: { 
+              'Content-Type': 'application/json',
+              'x-api-key': apiKey,
+              'idempotency-key': 'init-' + Date.now()
+            },
+            body: JSON.stringify({
+              productId,
+              planId,
+              userId,
+              email,
+            })
+          });
+
+          if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(errData.message || 'Failed to initiate payment');
+          }
+
+          const result = await response.json();
+          // The backend returns a checkoutUrl, let's just parse its params
+          const newUrl = new URL(result.checkoutUrl);
+          const newParams = new URLSearchParams(newUrl.search);
+
+          setSessionData({
+            order_id: newParams.get('orderId'),
+            publishableKey: newParams.get('publishableKey'),
+            tilledAccountId: newParams.get('tilledAccountId'),
+            amount: parseInt(newParams.get('amount')) || 0,
+            currency: newParams.get('currency') || 'USD',
+            product_name: 'Subscription Payment',
+            company_name: 'LMS Athena',
+            email: email,
+            userId: userId,
+          });
+        } else {
+          setError('Invalid checkout URL: Missing required parameters.');
+        }
+      } catch (err) {
+        console.error('Error processing checkout data:', err);
+        setError(`Checkout Error: ${err.message}`);
+      } finally {
+        setLoading(false);
       }
-      const config = await response.json();
-      setTilledConfig(config);
-    } catch (err) {
-      console.error('Error fetching Tilled config:', err);
-      setError('Failed to load payment configuration. Please try again.');
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
+
+    fetchCheckoutSession();
+  }, []);
 
   const handlePaymentSuccess = (subscriptionData) => {
     // Navigate to success page with subscription details
@@ -90,12 +143,12 @@ const Checkout = () => {
         {/* Header */}
         <div className="checkout-header">
           <div className="company-info">
-            <span className="company-logo">�️</span>
-            <span className="company-name">LMS Athena</span>
+            <span className="company-logo">🏢</span>
+            <span className="company-name">{sessionData.company_name}</span>
           </div>
           <div className="order-info">
-            <span className="order-label">Plan ID:</span>
-            <span className="order-id">{queryParams.planId}</span>
+            <span className="order-label">Order ID:</span>
+            <span className="order-id">{sessionData.order_id}</span>
           </div>
         </div>
 
@@ -105,19 +158,18 @@ const Checkout = () => {
             <h3>Subscription Details</h3>
             <div className="product-card">
               <div className="product-info">
-                <h4 className="product-name">Premium Subscription</h4>
+                <h4 className="product-name">{sessionData.product_name}</h4>
                 <p className="product-description">
-                  Monthly access to all premium features
+                  Securely process your subscription payment.
                 </p>
                 <div className="user-details">
-                  <p><strong>Email:</strong> {queryParams.email}</p>
-                  <p><strong>User ID:</strong> {queryParams.userId}</p>
-                  <p><strong>Product ID:</strong> {queryParams.productId}</p>
+                  {sessionData.email && <p><strong>Email:</strong> {sessionData.email}</p>}
+                  {sessionData.userId && <p><strong>User ID:</strong> {sessionData.userId}</p>}
                 </div>
               </div>
               <div className="product-price-section">
-                <div className="price-label">Monthly Price</div>
-                <div className="product-price">$29.99</div>
+                <div className="price-label">Price</div>
+                <div className="product-price">${(sessionData.amount / 100).toFixed(2)} {sessionData.currency.toUpperCase()}</div>
               </div>
             </div>
           </div>
@@ -131,8 +183,11 @@ const Checkout = () => {
                 <span className="secure-badge">🔒 SSL Encrypted</span>
               </div>
               <CardForm 
-                tilledConfig={tilledConfig}
-                queryParams={queryParams}
+                orderId={sessionData.order_id}
+                tilledAccountId={sessionData.tilledAccountId}
+                publishableKey={sessionData.publishableKey}
+                email={sessionData.email}
+                customerName={sessionData.customer_name || 'Customer'}
                 onPaymentSuccess={handlePaymentSuccess}
                 onPaymentFailed={handlePaymentFailed}
               />

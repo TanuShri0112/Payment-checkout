@@ -1,9 +1,16 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/checkout.css';
 
 const Home = () => {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('orderId') || urlParams.get('productId')) {
+      navigate('/checkout' + window.location.search, { replace: true });
+    }
+  }, [navigate]);
 
   const handleDemoCheckout = () => {
     // Navigate to checkout with demo query parameters
@@ -11,26 +18,25 @@ const Home = () => {
   };
 
   return (
-    <div className="checkout-container">
-      <div className="result-container">
+    <div className="home-container">
+      <div className="home-card">
         <h1>Welcome to LMS Athena Payment</h1>
         <p>Complete payment processing with secure checkout</p>
         
         <div className="demo-section">
           <h3>Try Demo Checkout</h3>
           <p>Click below to test the payment flow with a demo session:</p>
-          <button 
-            className="retry-button" 
-            onClick={handleDemoCheckout}
-          >
+          <button className="demo-button" onClick={handleDemoCheckout}>
             Start Demo Checkout
           </button>
         </div>
 
-        <div className="instructions">
+        <div className="dev-section">
           <h3>For Development</h3>
-          <p>To test with a specific session ID, navigate to:</p>
-          <code>/checkout?session_id=your_session_id</code>
+          <p>The system now supports direct product parameters:</p>
+          <div className="code-snippet">
+            /checkout?productId=...&planId=...&userId=...&email=...
+          </div>
         </div>
       </div>
     </div>
