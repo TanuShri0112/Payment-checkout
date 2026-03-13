@@ -218,9 +218,15 @@
   border: 2px solid #e1e5e9;
   border-radius: 8px;
   background: white;
-  min-height: 44px;
+  height: 44px;
+  overflow: hidden;
   transition: border-color 0.2s ease;
   position: relative;
+}
+
+.card-field iframe {
+  height: 44px !important;
+  width: 100% !important;
 }
 
 /* Fallback styling for demo mode when Tilled isn't loaded */

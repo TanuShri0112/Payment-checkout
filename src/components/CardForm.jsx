@@ -95,6 +95,7 @@ const CardForm = ({ orderId, tilledAccountId, publishableKey, email, customerNam
 
     try {
       console.log('Generating payload and calling createPaymentMethod...');
+      console.log('Form object:', form, '| Form valid:', form && !form.invalid);
       
       // Following the demo's "handleSavePaymentMethod" exact structure
       const paymentMethod = await tilled.createPaymentMethod({
@@ -107,7 +108,7 @@ const CardForm = ({ orderId, tilledAccountId, publishableKey, email, customerNam
             country: 'US',
           },
         }
-      });
+      }, form);
       
       console.log('Tilled response:', paymentMethod);
 
