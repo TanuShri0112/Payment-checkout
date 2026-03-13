@@ -59,10 +59,11 @@ const Checkout = () => {
               'idempotency-key': 'init-' + Date.now()
             },
             body: JSON.stringify({
-              productId,
-              planId,
-              userId,
-              email,
+              externalUserId: userId,
+              productPlanId: planId,
+              name: 'Customer',
+              email: email,
+              referenceId: 'order_sub_' + Date.now(),
             })
           });
 
@@ -73,6 +74,9 @@ const Checkout = () => {
 
           const result = await response.json();
           // The backend returns a checkoutUrl, let's just parse its params
+          if (!result.checkoutUrl) {
+            throw new Error('No checkout URL returned. The plan may not be a subscription.');
+          }
           const newUrl = new URL(result.checkoutUrl);
           const newParams = new URLSearchParams(newUrl.search);
 
