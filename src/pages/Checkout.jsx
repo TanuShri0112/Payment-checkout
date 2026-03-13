@@ -1,68 +1,69 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { getSessionId } from '../utils/getSessionId';
-import { getCheckoutSession } from '../services/paymentService';
 import CardForm from '../components/CardForm';
 import '../styles/checkout.css';
 
 const Checkout = () => {
   const navigate = useNavigate();
-  const [sessionData, setSessionData] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [tilledConfig, setTilledConfig] = useState(null);
+  const [queryParams, setQueryParams] = useState({});
 
   useEffect(() => {
-    const fetchCheckoutSession = async () => {
-      try {
-        const sessionId = getSessionId();
-        
-        if (!sessionId) {
-          setError('No session ID found in URL');
-          setIsLoading(false);
-          return;
-        }
-
-        // Check if this is a demo session
-        if (sessionId.startsWith('demo_session_')) {
-          // Use mock data for demo sessions
-          const mockData = {
-            product_name: 'Premium Subscription Plan',
-            product_description: 'Monthly access to all premium features',
-            amount: 2999, // $29.99
-            client_secret: 'demo_client_secret_' + Math.random().toString(36).substr(2, 9),
-            company_name: 'LMS Athena',
-            company_logo: '�️',
-            order_id: 'ORD-' + Math.random().toString(36).substr(2, 9).toUpperCase()
-          };
-          setSessionData(mockData);
-        } else {
-          // Fetch real data from API
-          const data = await getCheckoutSession(sessionId);
-          setSessionData(data);
-        }
-      } catch (err) {
-        console.error('Error fetching checkout session:', err);
-        setError('Failed to load checkout session. Please try again.');
-      } finally {
-        setIsLoading(false);
-      }
+    // Extract query parameters from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const params = {
+      productId: urlParams.get('productId'),
+      planId: urlParams.get('planId'),
+      userId: urlParams.get('userId'),
+      email: urlParams.get('email')
     };
+    setQueryParams(params);
 
-    fetchCheckoutSession();
+    // Validate required parameters
+    if (!params.productId || !params.planId || !params.userId || !params.email) {
+      setError('Missing required parameters. Please access checkout from the product page.');
+      setLoading(false);
+      return;
+    }
+
+    // Fetch Tilled configuration
+    fetchTilledConfig(params.productId);
   }, []);
 
-  const handlePaymentSuccess = () => {
-    navigate('/success');
+  const fetchTilledConfig = async (productId) => {
+    try {
+      const response = await fetch(`/api/config?productId=${productId}`);
+      if (!response.ok) {
+        throw new Error('Failed to fetch configuration');
+      }
+      const config = await response.json();
+      setTilledConfig(config);
+    } catch (err) {
+      console.error('Error fetching Tilled config:', err);
+      setError('Failed to load payment configuration. Please try again.');
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handlePaymentFailed = () => {
+  const handlePaymentSuccess = (subscriptionData) => {
+    // Navigate to success page with subscription details
+    navigate('/success', { state: { subscription: subscriptionData } });
+  };
+
+  const handlePaymentFailed = (errorMessage) => {
+    // Navigate to failed page
     navigate('/failed');
   };
 
-  if (isLoading) {
+  if (loading) {
     return (
       <div className="checkout-container">
-        <div className="loading">Loading checkout...</div>
+        <div className="result-container">
+          <div className="loading-spinner">Loading...</div>
+        </div>
       </div>
     );
   }
@@ -70,15 +71,15 @@ const Checkout = () => {
   if (error) {
     return (
       <div className="checkout-container">
-        <div className="error-message">{error}</div>
-      </div>
-    );
-  }
-
-  if (!sessionData) {
-    return (
-      <div className="checkout-container">
-        <div className="error-message">No checkout session data available</div>
+        <div className="result-container">
+          <div className="error-message">{error}</div>
+          <button 
+            className="retry-button" 
+            onClick={() => window.history.back()}
+          >
+            Go Back
+          </button>
+        </div>
       </div>
     );
   }
@@ -89,29 +90,34 @@ const Checkout = () => {
         {/* Header */}
         <div className="checkout-header">
           <div className="company-info">
-            <span className="company-logo">{sessionData.company_logo || '🏢'}</span>
-            <span className="company-name">{sessionData.company_name || 'TechCorp Solutions'}</span>
+            <span className="company-logo">�️</span>
+            <span className="company-name">LMS Athena</span>
           </div>
           <div className="order-info">
-            <span className="order-label">Order ID:</span>
-            <span className="order-id">{sessionData.order_id || 'DEMO-ORDER'}</span>
+            <span className="order-label">Plan ID:</span>
+            <span className="order-id">{queryParams.planId}</span>
           </div>
         </div>
 
         <div className="checkout-content">
           {/* Product Section */}
           <div className="product-section">
-            <h3>Product Details</h3>
+            <h3>Subscription Details</h3>
             <div className="product-card">
               <div className="product-info">
-                <h4 className="product-name">{sessionData.product_name}</h4>
+                <h4 className="product-name">Premium Subscription</h4>
                 <p className="product-description">
-                  {sessionData.product_description || 'Digital product with premium features'}
+                  Monthly access to all premium features
                 </p>
+                <div className="user-details">
+                  <p><strong>Email:</strong> {queryParams.email}</p>
+                  <p><strong>User ID:</strong> {queryParams.userId}</p>
+                  <p><strong>Product ID:</strong> {queryParams.productId}</p>
+                </div>
               </div>
               <div className="product-price-section">
-                <div className="price-label">Total Amount</div>
-                <div className="product-price">${(sessionData.amount / 100).toFixed(2)}</div>
+                <div className="price-label">Monthly Price</div>
+                <div className="product-price">$29.99</div>
               </div>
             </div>
           </div>
@@ -125,7 +131,8 @@ const Checkout = () => {
                 <span className="secure-badge">🔒 SSL Encrypted</span>
               </div>
               <CardForm 
-                clientSecret={sessionData.client_secret}
+                tilledConfig={tilledConfig}
+                queryParams={queryParams}
                 onPaymentSuccess={handlePaymentSuccess}
                 onPaymentFailed={handlePaymentFailed}
               />
@@ -133,11 +140,12 @@ const Checkout = () => {
           </div>
         </div>
 
+        {/* Footer */}
         <div className="checkout-footer">
-          <p>© 2024 {sessionData.company_name || 'LMS Athena'}. All rights reserved.</p>
+          <p> 2024 LMS Athena. All rights reserved.</p>
           <div className="payment-methods">
             <span>Accepted Payment Methods:</span>
-            <span className="payment-icons">💳 Visa • 💳 Mastercard • 💳 Amex</span>
+            <span className="payment-icons"> Visa • Mastercard • Amex</span>
           </div>
         </div>
       </div>

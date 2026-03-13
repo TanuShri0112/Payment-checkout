@@ -1,25 +1,27 @@
 import React, { useState, useEffect } from 'react';
 
-const CardForm = ({ clientSecret, onPaymentSuccess, onPaymentFailed }) => {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+const CardForm = ({ tilledConfig, queryParams, onPaymentSuccess, onPaymentFailed }) => {
   const [tilled, setTilled] = useState(null);
   const [cardNumber, setCardNumber] = useState(null);
   const [cardExpiry, setCardExpiry] = useState(null);
   const [cardCvv, setCardCvv] = useState(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [isDemoMode, setIsDemoMode] = useState(false);
 
   // Demo form state
   const [demoCardNumber, setDemoCardNumber] = useState('');
   const [demoExpiry, setDemoExpiry] = useState('');
   const [demoCvv, setDemoCvv] = useState('');
+  const [userName, setUserName] = useState('');
+  const [zipCode, setZipCode] = useState('');
 
   useEffect(() => {
-    if (clientSecret) {
-      // Check if this is demo mode (client secret starts with "demo_client_secret")
-      if (clientSecret.startsWith('demo_client_secret')) {
+    if (tilledConfig) {
+      // Check if this is demo mode
+      if (tilledConfig.publishableKey && tilledConfig.publishableKey.startsWith('demo_')) {
         setIsDemoMode(true);
-        setError('Demo mode: Enter any card details to test the payment flow');
+        setError('Demo mode: Enter any card details to test the subscription flow');
         return;
       }
 
@@ -33,88 +35,55 @@ const CardForm = ({ clientSecret, onPaymentSuccess, onPaymentFailed }) => {
           } else {
             console.warn('Tilled.js not loaded. Using demo mode.');
             setIsDemoMode(true);
-            setError('Demo mode: Tilled.js not loaded. Enter any card details to test');
+            setError('Demo mode: Tilled.js not loaded. Update your Tilled credentials in CardForm.jsx');
           }
         }, 1000);
         
         return () => clearTimeout(timer);
       }
     }
-  }, [clientSecret]);
+  }, [tilledConfig]);
 
   const initializeTilled = async () => {
     try {
-      // Check if Tilled is available
-      if (!window.Tilled) {
-        console.warn('Tilled.js not loaded. Using demo mode.');
-        setError('Demo mode: Tilled.js not loaded. Update your Tilled credentials in CardForm.jsx');
-        return;
-      }
+      const tilledInstance = new window.Tilled(
+        tilledConfig.publishableKey,
+        tilledConfig.accountId,
+        {
+          sandbox: true // Set to false for production
+        }
+      );
 
-      // Initialize Tilled with your publishable key and account ID
-      // You'll need to replace these with your actual Tilled credentials
-      const tilledInstance = new window.Tilled('your_publishable_key', {
-        account: 'your_account_id'
+      const form = await tilledInstance.form({
+        payment_method_type: 'card',
       });
 
-      setTilled(tilledInstance);
+      // Create and mount card fields
+      const cardNumberField = await form.createField('cardNumber');
+      const cardExpiryField = await form.createField('cardExpiry');
+      const cardCvvField = await form.createField('cardCvv');
 
-      // Create card fields
-      const cardNumberField = tilledInstance.createField('cardNumber', {
-        styles: {
-          base: {
-            fontSize: '16px',
-            color: '#424770',
-            '::placeholder': {
-              color: '#aab7c4',
-            },
-          },
-        },
-      });
-
-      const cardExpiryField = tilledInstance.createField('cardExpiry', {
-        styles: {
-          base: {
-            fontSize: '16px',
-            color: '#424770',
-            '::placeholder': {
-              color: '#aab7c4',
-            },
-          },
-        },
-      });
-
-      const cardCvvField = tilledInstance.createField('cardCvv', {
-        styles: {
-          base: {
-            fontSize: '16px',
-            color: '#424770',
-            '::placeholder': {
-              color: '#aab7c4',
-            },
-          },
-        },
-      });
-
-      // Mount fields to DOM elements
       cardNumberField.mount('#card-number');
       cardExpiryField.mount('#card-expiry');
       cardCvvField.mount('#card-cvv');
 
+      await form.build();
+
       setCardNumber(cardNumberField);
       setCardExpiry(cardExpiryField);
       setCardCvv(cardCvvField);
+      setTilled(tilledInstance);
     } catch (err) {
       console.error('Error initializing Tilled:', err);
-      setError('Failed to initialize payment form. Please check your Tilled credentials.');
+      setError('Failed to initialize payment form');
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubscribe = async (e) => {
     e.preventDefault();
     
     if (isDemoMode) {
-      // Demo mode - simulate payment processing
+      // Demo mode - simulate subscription creation
       setIsLoading(true);
       setError(null);
       
@@ -122,17 +91,22 @@ const CardForm = ({ clientSecret, onPaymentSuccess, onPaymentFailed }) => {
       setTimeout(() => {
         // For demo, let's randomly succeed or fail (80% success rate)
         if (Math.random() > 0.2) {
-          onPaymentSuccess();
+          const subscriptionData = {
+            success: true,
+            subscriptionId: 'sub_demo_' + Math.random().toString(36).substr(2, 9),
+            customerId: 'cus_demo_' + Math.random().toString(36).substr(2, 9)
+          };
+          onPaymentSuccess(subscriptionData);
         } else {
-          setError('Demo payment failed. Please try again.');
-          onPaymentFailed();
+          setError('Demo subscription failed. Please try again.');
+          onPaymentFailed('Demo subscription failed');
         }
         setIsLoading(false);
       }, 2000);
       return;
     }
     
-    if (!tilled || !clientSecret) {
+    if (!tilled || !tilledConfig) {
       setError('Payment form not properly initialized');
       return;
     }
@@ -141,29 +115,86 @@ const CardForm = ({ clientSecret, onPaymentSuccess, onPaymentFailed }) => {
     setError(null);
 
     try {
-      const result = await tilled.confirmPayment(clientSecret);
+      // 1. Generate Payment Method ID
+      const paymentMethod = await tilled.createPaymentMethod({
+        type: 'card',
+        billing_details: {
+          name: userName,
+          address: {
+            zip: zipCode
+          }
+        }
+      });
+
+      const paymentMethodId = paymentMethod.id;
       
-      if (result.status === 'succeeded') {
-        onPaymentSuccess();
+      // 2. Send to backend for subscription creation
+      const subscriptionResponse = await createSubscriptionOnBackend(paymentMethodId);
+      
+      if (subscriptionResponse.success) {
+        onPaymentSuccess(subscriptionResponse);
       } else {
-        setError(result.error?.message || 'Payment failed');
-        onPaymentFailed();
+        setError(subscriptionResponse.error || 'Subscription creation failed');
+        onPaymentFailed(subscriptionResponse.error);
       }
     } catch (err) {
-      console.error('Payment error:', err);
-      setError(err.message || 'An error occurred during payment');
-      onPaymentFailed();
+      console.error('Subscription error:', err);
+      setError(err.message || 'An error occurred during subscription');
+      onPaymentFailed(err.message);
     } finally {
       setIsLoading(false);
     }
   };
 
+  const createSubscriptionOnBackend = async (paymentMethodId) => {
+    try {
+      const response = await fetch('/api/subscriptions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          payment_method_id: paymentMethodId,
+          productId: queryParams.productId,
+          planId: queryParams.planId,
+          userId: queryParams.userId,
+          email: queryParams.email
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to create subscription');
+      }
+
+      return await response.json();
+    } catch (err) {
+      console.error('Backend subscription error:', err);
+      return {
+        success: false,
+        error: 'Failed to create subscription. Please try again.'
+      };
+    }
+  };
+
   return (
-    <form onSubmit={handleSubmit} className="card-form">
+    <form onSubmit={handleSubscribe} className="card-form">
       {error && <div className="error-message">{error}</div>}
       
       {isDemoMode ? (
         <>
+          <div className="form-group">
+            <label htmlFor="user-name">Full Name</label>
+            <input
+              id="user-name"
+              type="text"
+              className="card-field demo-input"
+              placeholder="John Doe"
+              value={userName}
+              onChange={(e) => setUserName(e.target.value)}
+              required
+            />
+          </div>
+
           <div className="form-group">
             <label htmlFor="card-number">Card Number</label>
             <input
@@ -204,9 +235,35 @@ const CardForm = ({ clientSecret, onPaymentSuccess, onPaymentFailed }) => {
               />
             </div>
           </div>
+
+          <div className="form-group">
+            <label htmlFor="zip-code">ZIP Code</label>
+            <input
+              id="zip-code"
+              type="text"
+              className="card-field demo-input"
+              placeholder="12345"
+              value={zipCode}
+              onChange={(e) => setZipCode(e.target.value)}
+              required
+            />
+          </div>
         </>
       ) : (
         <>
+          <div className="form-group">
+            <label htmlFor="user-name">Full Name</label>
+            <input
+              id="user-name"
+              type="text"
+              className="card-field demo-input"
+              placeholder="John Doe"
+              value={userName}
+              onChange={(e) => setUserName(e.target.value)}
+              required
+            />
+          </div>
+
           <div className="form-group">
             <label htmlFor="card-number">Card Number</label>
             <div id="card-number" className="card-field" data-placeholder="1234 5678 9012 3456"></div>
@@ -223,6 +280,19 @@ const CardForm = ({ clientSecret, onPaymentSuccess, onPaymentFailed }) => {
               <div id="card-cvv" className="card-field" data-placeholder="123"></div>
             </div>
           </div>
+
+          <div className="form-group">
+            <label htmlFor="zip-code">ZIP Code</label>
+            <input
+              id="zip-code"
+              type="text"
+              className="card-field demo-input"
+              placeholder="12345"
+              value={zipCode}
+              onChange={(e) => setZipCode(e.target.value)}
+              required
+            />
+          </div>
         </>
       )}
 
@@ -231,7 +301,7 @@ const CardForm = ({ clientSecret, onPaymentSuccess, onPaymentFailed }) => {
         className="pay-button" 
         disabled={isLoading || (!tilled && !isDemoMode)}
       >
-        {isLoading ? 'Processing...' : 'Pay Now'}
+        {isLoading ? 'Processing...' : 'Subscribe Now'}
       </button>
     </form>
   );

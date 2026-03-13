@@ -6,8 +6,8 @@ const Home = () => {
   const navigate = useNavigate();
 
   const handleDemoCheckout = () => {
-    // Navigate to checkout with a demo session ID
-    navigate('/checkout?session_id=demo_session_12345');
+    // Navigate to checkout with demo query parameters
+    navigate('/checkout?productId=prod_demo_123&planId=plan_demo_456&userId=usr_demo_789&email=demo@lmsathena.com');
   };
 
   return (

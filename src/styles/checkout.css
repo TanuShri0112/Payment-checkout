@@ -110,10 +110,21 @@
   margin-bottom: 4px;
 }
 
-.product-price {
-  font-size: 32px;
-  font-weight: 700;
-  color: #059669;
+.user-details {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.user-details p {
+  margin: 8px 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.user-details strong {
+  color: #1e293b;
+  font-weight: 600;
 }
 
 /* Payment Section */
