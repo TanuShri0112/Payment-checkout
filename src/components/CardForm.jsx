@@ -158,31 +158,70 @@ const CardForm = ({ orderId, tilledAccountId, publishableKey, email, customerNam
         
         <div className="form-group">
           <label htmlFor="card-number">Card Number</label>
-          <div id="card-number" className="card-field"></div>
+          <div className="card-field card-field-with-icons">
+            <div id="card-number" className="tilled-field"></div>
+            <div className="field-icons">
+              <img src="https://upload.wikimedia.org/wikipedia/commons/5/5c/Visa_Inc._logo_%282021%E2%80%93present%29.svg" alt="Visa" />
+              <img src="https://upload.wikimedia.org/wikipedia/commons/a/a4/Mastercard_2019_logo.svg" alt="Mastercard" />
+              <img src="https://upload.wikimedia.org/wikipedia/commons/f/fa/American_Express_logo_%282018%29.svg" alt="Amex" />
+              <img src="https://upload.wikimedia.org/wikipedia/commons/4/40/JCB_logo.svg" alt="JCB" />
+            </div>
+          </div>
         </div>
 
         <div className="form-row">
           <div className="form-group">
             <label htmlFor="card-expiry">Expiry Date</label>
-            <div id="card-expiry" className="card-field"></div>
+            <div className="card-field card-field-with-icons">
+              <div id="card-expiry" className="tilled-field"></div>
+              <div className="field-icons" style={{ paddingRight: '4px' }}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M19 4H5C3.89543 4 3 4.89543 3 6V20C3 21.1046 3.89543 22 5 22H19C20.1046 22 21 21.1046 21 20V6C21 4.89543 20.1046 4 19 4Z" stroke="#4b5563" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M16 2V6" stroke="#4b5563" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M8 2V6" stroke="#4b5563" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M3 10H21" stroke="#4b5563" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+            </div>
           </div>
 
           <div className="form-group">
             <label htmlFor="card-cvv">CVV</label>
-            <div id="card-cvv" className="card-field"></div>
+            <div className="card-field card-field-with-icons">
+              <div id="card-cvv" className="tilled-field"></div>
+              <div className="field-icons" style={{ paddingRight: '2px' }}>
+                <svg width="24" height="18" viewBox="0 0 24 18" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <rect x="1" y="2" width="22" height="14" rx="2" stroke="#4b5563" strokeWidth="1.5"/>
+                  <rect x="1" y="5" width="22" height="3" fill="#4b5563"/>
+                  <text x="11" y="14" fill="#000000" fontFamily="sans-serif" fontSize="6.5" fontWeight="900" letterSpacing="0.5">123</text>
+                </svg>
+              </div>
+            </div>
           </div>
         </div>
 
         <div className="form-group">
           <label htmlFor="card-zip">ZIP Code</label>
-          <input 
-            type="text" 
-            id="card-zip" 
-            className="zip-input" 
-            placeholder="e.g. 80021"
-            value={zip}
-            onChange={(e) => setZip(e.target.value)}
-          />
+          <div className="card-field card-field-with-icons">
+            <input 
+              type="text" 
+              id="card-zip" 
+              className="zip-input" 
+              placeholder="e.g. 80021"
+              value={zip}
+              maxLength="5"
+              onChange={(e) => {
+                const val = e.target.value.replace(/\D/g, ''); // strip non-numeric characters
+                setZip(val);
+              }}
+            />
+            <div className="field-icons" style={{ paddingRight: '4px' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z" stroke="#4b5563" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <circle cx="12" cy="9" r="2.5" stroke="#4b5563" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </div>
+          </div>
         </div>
 
         <button 
@@ -192,9 +231,12 @@ const CardForm = ({ orderId, tilledAccountId, publishableKey, email, customerNam
         >
           {isLoading ? 'Processing...' : 'Subscribe Now'}
         </button>
-        {!isValid && !isLoading && tilled && (
-          <p className="validation-hint">Please enter valid card details</p>
-        )}
+
+        <div className="payment-footer">
+          <div className="powered-by">
+            Secure Payment • Powered by <strong>Tilled</strong>
+          </div>
+        </div>
       </form>
     </div>
   );

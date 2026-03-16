@@ -20,7 +20,7 @@ const Home = () => {
   return (
     <div className="home-container">
       <div className="home-card">
-        <h1>Welcome to LMS Athena Payment</h1>
+        <h1>Welcome to Athena LMS Payment</h1>
         <p>Complete payment processing with secure checkout</p>
         
         <div className="demo-section">

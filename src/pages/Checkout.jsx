@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import CardForm from '../components/CardForm';
 import '../styles/checkout.css';
+import athenaLogo from '../assets/athenalms_logo.png';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -30,7 +31,7 @@ const Checkout = () => {
             amount: parseInt(amountFromUrl) || 0,
             currency: currencyFromUrl || 'USD',
             product_name: 'Subscription Payment',
-            company_name: 'LMS Athena',
+            company_name: 'Athena LMS',
             email: urlParams.get('email'),
             userId: urlParams.get('userId'),
           });
@@ -83,7 +84,7 @@ const Checkout = () => {
             amount: parseInt(newParams.get('amount')) || 0,
             currency: newParams.get('currency') || 'USD',
             product_name: 'Subscription Payment',
-            company_name: 'LMS Athena',
+            company_name: 'Athena LMS',
             email: email,
             userId: userId,
           });
@@ -140,36 +141,35 @@ const Checkout = () => {
   return (
     <div className="checkout-container">
       <div className="checkout-page">
-        {/* Header */}
-        <div className="checkout-header">
-          <div className="company-info">
-            <span className="company-logo">🏢</span>
-            <span className="company-name">{sessionData.company_name}</span>
-          </div>
-          <div className="order-info">
-            <span className="order-label">Order ID:</span>
-            <span className="order-id">{sessionData.order_id}</span>
-          </div>
-        </div>
-
         <div className="checkout-content">
           {/* Product Section */}
           <div className="product-section">
-            <h3>Subscription Details</h3>
             <div className="product-card">
+              <div className="company-header">
+                <img src={athenaLogo} alt="Athena LMS" height="28" style={{ width: 'auto', objectFit: 'contain' }} />
+                <span className="company-title">Athena LMS</span>
+              </div>
+              <h3>Subscription Details</h3>
               <div className="product-info">
                 <h4 className="product-name">{sessionData.product_name}</h4>
                 <p className="product-description">
                   Securely process your subscription payment.
                 </p>
                 <div className="user-details">
-                  {sessionData.email && <p><strong>Email:</strong> {sessionData.email}</p>}
-                  {sessionData.userId && <p><strong>User ID:</strong> {sessionData.userId}</p>}
+                  <p><strong>Order ID:</strong> <span>{sessionData.order_id}</span></p>
+                  {sessionData.email && <p><strong>Email:</strong> <span>{sessionData.email}</span></p>}
+                  {sessionData.userId && <p><strong>User ID:</strong> <span>{sessionData.userId}</span></p>}
                 </div>
               </div>
               <div className="product-price-section">
                 <div className="price-label">Price</div>
-                <div className="product-price">${(sessionData.amount / 100).toFixed(2)} {sessionData.currency.toUpperCase()}</div>
+                <div className="product-price">
+                  ${(sessionData.amount / 100).toFixed(2)} 
+                  <div className="currency">
+                    {sessionData.currency.toUpperCase()}
+                    <span>/ month</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -192,15 +192,6 @@ const Checkout = () => {
                 onPaymentFailed={handlePaymentFailed}
               />
             </div>
-          </div>
-        </div>
-
-        {/* Footer */}
-        <div className="checkout-footer">
-          <p> 2024 LMS Athena. All rights reserved.</p>
-          <div className="payment-methods">
-            <span>Accepted Payment Methods:</span>
-            <span className="payment-icons"> Visa • Mastercard • Amex</span>
           </div>
         </div>
       </div>
