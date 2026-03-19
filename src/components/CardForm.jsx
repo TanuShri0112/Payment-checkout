@@ -87,6 +87,17 @@ const CardForm = ({ orderId, tilledAccountId, publishableKey, email, customerNam
       return;
     }
 
+    // Increment attempt counter before processing payment
+    const attemptKey = `payment_attempts_${orderId}`;
+    const currentAttempts = parseInt(sessionStorage.getItem(attemptKey) || '0');
+    sessionStorage.setItem(attemptKey, (currentAttempts + 1).toString());
+    
+    // Store order ID for reference in failed page
+    sessionStorage.setItem('last_order_id', orderId);
+    
+    // Mark that a payment attempt was made (for route protection)
+    sessionStorage.setItem('payment_attempt_completed', 'true');
+
     setIsLoading(true);
     setError(null);
 

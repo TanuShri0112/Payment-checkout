@@ -1,9 +1,47 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
 import '../styles/success.css';
 
 const PaymentSuccess = () => {
   const navigate = useNavigate();
+  const [isValidAccess, setIsValidAccess] = useState(false);
+
+  useEffect(() => {
+    // Check if user came from a valid payment flow
+    const hasValidPaymentFlow = sessionStorage.getItem('payment_attempt_completed') === 'true';
+    const hasRecentOrder = sessionStorage.getItem('last_order_id');
+    
+    if (!hasValidPaymentFlow || !hasRecentOrder) {
+      // Redirect to checkout if access is invalid
+      navigate('/checkout', { replace: true });
+      return;
+    }
+    
+    setIsValidAccess(true);
+    
+    // Replace the current history entry to prevent going back to checkout
+    window.history.replaceState(null, '', '/success');
+    
+    // Push a new entry to the current page to create a "trap"
+    window.history.pushState(null, '', '/success');
+    
+    // Listen for popstate events (back button)
+    const handlePopState = (event) => {
+      // Keep user on success page if they try to go back
+      window.history.pushState(null, '', '/success');
+    };
+    
+    window.addEventListener('popstate', handlePopState);
+    
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
+  }, [navigate]);
+
+  // Don't render anything if access is invalid
+  if (!isValidAccess) {
+    return null;
+  }
 
   return (
     <div className="payment-success-wrapper">

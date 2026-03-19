@@ -13,8 +13,23 @@ const Checkout = () => {
   useEffect(() => {
     const fetchCheckoutSession = async () => {
       try {
+        // Store the original checkout URL for retry functionality
+        const currentUrl = window.location.href;
+        sessionStorage.setItem('original_checkout_url', currentUrl);
+        
+        // Initialize payment attempt tracking for this order
         const urlParams = new URLSearchParams(window.location.search);
         const orderId = urlParams.get('orderId');
+        
+        if (orderId) {
+          const attemptKey = `payment_attempts_${orderId}`;
+          const currentAttempts = sessionStorage.getItem(attemptKey);
+          
+          // Only initialize if no attempts tracked yet (fresh checkout session)
+          if (!currentAttempts) {
+            sessionStorage.setItem(attemptKey, '0');
+          }
+        }
         
         // Data we might already have from the URL
         const publishableKeyFromUrl = urlParams.get('publishableKey');
@@ -76,9 +91,17 @@ const Checkout = () => {
           // The backend returns a checkoutUrl, let's just parse its params
           const newUrl = new URL(result.checkoutUrl);
           const newParams = new URLSearchParams(newUrl.search);
+          const newOrderId = newParams.get('orderId');
+
+          // Initialize payment attempt tracking for the new order
+          if (newOrderId) {
+            const attemptKey = `payment_attempts_${newOrderId}`;
+            sessionStorage.setItem(attemptKey, '0');
+            sessionStorage.setItem('last_order_id', newOrderId);
+          }
 
           setSessionData({
-            order_id: newParams.get('orderId'),
+            order_id: newOrderId,
             publishableKey: newParams.get('publishableKey'),
             tilledAccountId: newParams.get('tilledAccountId'),
             amount: parseInt(newParams.get('amount')) || 0,
