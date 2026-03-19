@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const CardForm = ({ orderId, tilledAccountId, publishableKey, email, customerName, onPaymentSuccess, onPaymentFailed }) => {
+  const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [tilled, setTilled] = useState(null);
@@ -27,7 +29,7 @@ const CardForm = ({ orderId, tilledAccountId, publishableKey, email, customerNam
       if (tilled) return;
 
       console.log('Initializing Tilled with:', { publishableKey, tilledAccountId, sandbox: true });
-      
+
       const tilledInstance = new window.Tilled(publishableKey, tilledAccountId, {
         sandbox: true,
         log_level: 0,
@@ -76,7 +78,7 @@ const CardForm = ({ orderId, tilledAccountId, publishableKey, email, customerNam
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     if (!tilled || !form || !orderId) {
       setError('Payment form not properly initialized');
       return;
@@ -91,10 +93,10 @@ const CardForm = ({ orderId, tilledAccountId, publishableKey, email, customerNam
     const attemptKey = `payment_attempts_${orderId}`;
     const currentAttempts = parseInt(sessionStorage.getItem(attemptKey) || '0');
     sessionStorage.setItem(attemptKey, (currentAttempts + 1).toString());
-    
+
     // Store order ID for reference in failed page
     sessionStorage.setItem('last_order_id', orderId);
-    
+
     // Mark that a payment attempt was made (for route protection)
     sessionStorage.setItem('payment_attempt_completed', 'true');
 
@@ -107,7 +109,7 @@ const CardForm = ({ orderId, tilledAccountId, publishableKey, email, customerNam
     try {
       console.log('Generating payload and calling createPaymentMethod...');
       console.log('Form object:', form, '| Form valid:', form && !form.invalid);
-      
+
       // Following the demo's "handleSavePaymentMethod" exact structure
       const paymentMethod = await tilled.createPaymentMethod({
         type: 'card',
@@ -120,7 +122,7 @@ const CardForm = ({ orderId, tilledAccountId, publishableKey, email, customerNam
           },
         }
       }, form);
-      
+
       console.log('Tilled response:', paymentMethod);
 
       if (paymentMethod.error) {
@@ -128,31 +130,20 @@ const CardForm = ({ orderId, tilledAccountId, publishableKey, email, customerNam
       }
 
       console.log("Created Payment Method ID:", paymentMethod.id);
+      
+      // Store checkout metadata for safety
+      sessionStorage.setItem('last_order_id', orderId);
+      sessionStorage.setItem('payment_attempt_completed', 'true');
 
-      // 2. Confirm to our Backend
-      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
-      const response = await fetch(`${apiBaseUrl}/api/payments/confirm`, {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'x-api-key': 'pk_prod_athenaEbook_20b33599828f71b9a04389c43a4c1a194d47169fc6d98f84d608054fa2ecf632'
+      // Navigate to processing page for backend confirmation
+      navigate('/processing', { 
+        state: { 
+          orderId, 
+          paymentMethodId: paymentMethod.id, 
+          tilledAccountId 
         },
-        body: JSON.stringify({
-          orderId: orderId,
-          payment_method_id: paymentMethod.id,
-          tilledAccountId: tilledAccountId
-        })
+        replace: true
       });
-
-      const result = await response.json();
-
-      if (result.success) {
-        onPaymentSuccess(result.data);
-      } else {
-        const msg = result.error || result.message || 'Subscription confirmation failed';
-        setError(msg);
-        onPaymentFailed(msg);
-      }
     } catch (err) {
       console.error('Payment error:', err);
       setError(err.message || 'An error occurred during payment');
@@ -160,13 +151,14 @@ const CardForm = ({ orderId, tilledAccountId, publishableKey, email, customerNam
     } finally {
       setIsLoading(false);
     }
+
   };
 
   return (
     <div className="card-form-container">
       <form onSubmit={handleSubmit} className="card-form">
         {error && <div className="error-message">{error}</div>}
-        
+
         <div className="form-group">
           <label htmlFor="card-number">Card Number</label>
           <div className="card-field card-field-with-icons">
@@ -187,10 +179,10 @@ const CardForm = ({ orderId, tilledAccountId, publishableKey, email, customerNam
               <div id="card-expiry" className="tilled-field"></div>
               <div className="field-icons" style={{ paddingRight: '4px' }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <path d="M19 4H5C3.89543 4 3 4.89543 3 6V20C3 21.1046 3.89543 22 5 22H19C20.1046 22 21 21.1046 21 20V6C21 4.89543 20.1046 4 19 4Z" stroke="#4b5563" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M16 2V6" stroke="#4b5563" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M8 2V6" stroke="#4b5563" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                  <path d="M3 10H21" stroke="#4b5563" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                  <path d="M19 4H5C3.89543 4 3 4.89543 3 6V20C3 21.1046 3.89543 22 5 22H19C20.1046 22 21 21.1046 21 20V6C21 4.89543 20.1046 4 19 4Z" stroke="#4b5563" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M16 2V6" stroke="#4b5563" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M8 2V6" stroke="#4b5563" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  <path d="M3 10H21" stroke="#4b5563" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
                 </svg>
               </div>
             </div>
@@ -202,8 +194,8 @@ const CardForm = ({ orderId, tilledAccountId, publishableKey, email, customerNam
               <div id="card-cvv" className="tilled-field"></div>
               <div className="field-icons" style={{ paddingRight: '2px' }}>
                 <svg width="24" height="18" viewBox="0 0 24 18" fill="none" xmlns="http://www.w3.org/2000/svg">
-                  <rect x="1" y="2" width="22" height="14" rx="2" stroke="#4b5563" strokeWidth="1.5"/>
-                  <rect x="1" y="5" width="22" height="3" fill="#4b5563"/>
+                  <rect x="1" y="2" width="22" height="14" rx="2" stroke="#4b5563" strokeWidth="1.5" />
+                  <rect x="1" y="5" width="22" height="3" fill="#4b5563" />
                   <text x="11" y="14" fill="#000000" fontFamily="sans-serif" fontSize="6.5" fontWeight="900" letterSpacing="0.5">123</text>
                 </svg>
               </div>
@@ -214,10 +206,10 @@ const CardForm = ({ orderId, tilledAccountId, publishableKey, email, customerNam
         <div className="form-group">
           <label htmlFor="card-zip">ZIP Code</label>
           <div className="card-field card-field-with-icons">
-            <input 
-              type="text" 
-              id="card-zip" 
-              className="zip-input" 
+            <input
+              type="text"
+              id="card-zip"
+              className="zip-input"
               placeholder="e.g. 80021"
               value={zip}
               maxLength="5"
@@ -228,16 +220,16 @@ const CardForm = ({ orderId, tilledAccountId, publishableKey, email, customerNam
             />
             <div className="field-icons" style={{ paddingRight: '4px' }}>
               <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z" stroke="#4b5563" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
-                <circle cx="12" cy="9" r="2.5" stroke="#4b5563" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                <path d="M12 2C8.13 2 5 5.13 5 9C5 14.25 12 22 12 22C12 22 19 14.25 19 9C19 5.13 15.87 2 12 2Z" stroke="#4b5563" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                <circle cx="12" cy="9" r="2.5" stroke="#4b5563" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
           </div>
         </div>
 
-        <button 
-          type="submit" 
-          className="pay-button" 
+        <button
+          type="submit"
+          className="pay-button"
           disabled={isLoading || !tilled || !isValid}
         >
           {isLoading ? 'Processing...' : 'Subscribe Now'}

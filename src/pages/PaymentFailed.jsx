@@ -105,8 +105,8 @@ const PaymentFailed = () => {
           <h1 className="success-title">Payment Failed!</h1>
           <p className="success-description">
             {attemptsRemaining > 0 
-              ? `The transaction could not be completed. Please check your card details and try again. ${attemptsRemaining} attempt${attemptsRemaining > 1 ? 's' : ''} remaining.`
-              : 'Maximum payment attempts reached. Please go back to the product page and initiate a new payment flow.'
+              ? 'The transaction could not be completed. Please check your card details and try again.'
+              : null
             }
           </p>
           {attemptsRemaining > 0 ? (
@@ -114,7 +114,7 @@ const PaymentFailed = () => {
               onClick={handleTryAgain}
               className="success-link-button try-again-button"
             >
-              Try Payment Again ({attemptsRemaining} {attemptsRemaining === 1 ? 'attempt' : 'attempts'} remaining)
+              Try Payment Again
             </button>
           ) : (
             <p className="max-attempts-message">

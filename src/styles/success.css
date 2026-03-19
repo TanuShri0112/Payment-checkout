@@ -112,7 +112,17 @@
   background: #1e4068;
 }
 
+.max-attempts-message {
+  font-size: 15px;
+  color: #333333;
+  margin: 0 0 32px 0;
+  line-height: 1.5;
+  font-weight: 500;
+  max-width: 100%;
+}
+
 /* Animations */
+
 
 @keyframes modalReveal {
   0% {
@@ -125,7 +135,27 @@
   }
 }
 
+/* Processing Styles */
+.processing-spinner-container {
+  margin-bottom: 32px;
+}
+
+.processing-spinner {
+  width: 80px;
+  height: 80px;
+  border: 4px solid rgba(59, 130, 246, 0.1);
+  border-top: 4px solid #3b82f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
 /* Responsive Styles */
+
 @media (max-width: 480px) {
   .success-modal {
     padding: 50px 20px 30px;

@@ -148,14 +148,33 @@ const Checkout = () => {
   if (error) {
     return (
       <div className="checkout-container">
-        <div className="result-container">
-          <div className="error-message">{error}</div>
-          <button 
-            className="retry-button" 
-            onClick={() => window.history.back()}
-          >
-            Go Back
-          </button>
+        <div className="payment-success-wrapper">
+          <div className="success-modal">
+            <div className="success-logo-outer">
+              <div className="success-logo-inner" style={{ background: '#ef4444' }}>
+                <svg viewBox="0 0 100 100" className="success-svg-logo" xmlns="http://www.w3.org/2000/svg">
+                  <text 
+                    x="50%" 
+                    y="72%" 
+                    textAnchor="middle" 
+                    fill="white" 
+                    fontSize="65" 
+                    fontWeight="900" 
+                    fontFamily="Arial, sans-serif"
+                  >
+                    !
+                  </text>
+                </svg>
+              </div>
+            </div>
+            
+            <div className="success-content">
+              <h1 className="success-title">Invalid Checkout URL</h1>
+              <p className="success-description">
+                {error}
+              </p>
+            </div>
+          </div>
         </div>
       </div>
     );
@@ -225,7 +244,6 @@ const Checkout = () => {
             <div className="payment-card">
               <div className="payment-header">
                 <span className="payment-title">Secure Payment</span>
-                <span className="secure-badge">🔒 SSL Encrypted</span>
               </div>
               <CardForm 
                 orderId={sessionData.order_id}
