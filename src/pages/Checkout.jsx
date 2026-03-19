@@ -144,6 +144,28 @@ const Checkout = () => {
         <div className="checkout-content">
           {/* Product Section */}
           <div className="product-section">
+            {/* Animated Waves */}
+            <div className="wave"></div>
+            <div className="wave"></div>
+            <div className="wave"></div>
+            <div className="wave"></div>
+            
+            {/* SVG Wave Pattern */}
+            <svg className="svg-wave" viewBox="0 0 400 600" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M0,300 Q100,200 200,300 T400,300 L400,600 L0,600 Z" fill="url(#waveGradient)" opacity="0.3"/>
+              <path d="M0,400 Q100,300 200,400 T400,400 L400,600 L0,600 Z" fill="url(#waveGradient2)" opacity="0.2"/>
+              <defs>
+                <linearGradient id="waveGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#6366f1" stopOpacity="0.3"/>
+                  <stop offset="100%" stopColor="#8b5cf6" stopOpacity="0.1"/>
+                </linearGradient>
+                <linearGradient id="waveGradient2" x1="0%" y1="0%" x2="100%" y2="0%">
+                  <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.2"/>
+                  <stop offset="100%" stopColor="#6366f1" stopOpacity="0.05"/>
+                </linearGradient>
+              </defs>
+            </svg>
+            
             <div className="product-card">
               <div className="company-header">
                 <img src={athenaLogo} alt="Athena LMS" height="28" style={{ width: 'auto', objectFit: 'contain' }} />

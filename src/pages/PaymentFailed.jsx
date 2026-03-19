@@ -1,37 +1,45 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import '../styles/checkout.css';
+import '../styles/success.css';
 
 const PaymentFailed = () => {
   const navigate = useNavigate();
 
   const handleTryAgain = () => {
-    // Navigate back to checkout - you might want to preserve the session_id
     navigate(-1);
   };
 
-  const handleReturnHome = () => {
-    navigate('/');
-  };
-
   return (
-    <div className="checkout-container">
-      <div className="result-container">
-        <div className="failed-icon">✕</div>
-        <h1>Payment Failed</h1>
-        <p>Payment Failed. Please try again.</p>
-        <div className="button-group">
+    <div className="payment-success-wrapper payment-failure-wrapper">
+      <div className="success-modal">
+        <div className="success-logo-outer">
+          <div className="success-logo-inner failure-logo-inner">
+            <svg viewBox="0 0 100 100" className="success-svg-logo" xmlns="http://www.w3.org/2000/svg">
+              <text 
+                x="50%" 
+                y="72%" 
+                textAnchor="middle" 
+                fill="white" 
+                fontSize="65" 
+                fontWeight="900" 
+                fontFamily="Arial, sans-serif"
+              >
+                X
+              </text>
+            </svg>
+          </div>
+        </div>
+        
+        <div className="success-content">
+          <h1 className="success-title">Payment Failed!</h1>
+          <p className="success-description">
+            The transaction could not be completed. Please check your card details and try again.
+          </p>
           <button 
-            className="retry-button" 
             onClick={handleTryAgain}
+            className="success-link-button try-again-button"
           >
-            Try Again
-          </button>
-          <button 
-            className="return-button" 
-            onClick={handleReturnHome}
-          >
-            Return to Home
+            Try Payment Again
           </button>
         </div>
       </div>
@@ -40,3 +48,4 @@ const PaymentFailed = () => {
 };
 
 export default PaymentFailed;
+
