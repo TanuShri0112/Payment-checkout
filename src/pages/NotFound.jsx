@@ -1,10 +1,7 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
 import '../styles/success.css';
 
 const NotFound = () => {
-  const navigate = useNavigate();
-
   return (
     <div className="payment-success-wrapper">
       <div className="success-modal">
@@ -31,12 +28,6 @@ const NotFound = () => {
           <p className="success-description">
             The page you are looking for doesn't exist or is not accessible directly.
           </p>
-          <button 
-            onClick={() => navigate('/checkout')}
-            className="success-link-button"
-          >
-            Go to Checkout
-          </button>
         </div>
       </div>
     </div>
