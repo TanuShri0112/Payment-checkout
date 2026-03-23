@@ -7,28 +7,34 @@ const PaymentSuccess = () => {
   const [isValidAccess, setIsValidAccess] = useState(false);
 
   useEffect(() => {
-    // Check if user came from a valid payment flow
-    const hasValidPaymentFlow = sessionStorage.getItem('payment_attempt_completed') === 'true';
-    const hasRecentOrder = sessionStorage.getItem('last_order_id');
+    // Check if user came from a valid payment flow using React Router state
+    // This is the most secure way to prevent URL "cheating" or direct path access
+    const hasInternalState = location.state && location.state.fromPaymentProcess;
     
-    if (!hasValidPaymentFlow || !hasRecentOrder) {
-      // Redirect to checkout if access is invalid
-      navigate('/checkout', { replace: true });
+    // We strictly require internal state to show this page
+    if (!hasInternalState) {
+      console.warn('Unauthorized access attempts detected for success page');
+      // If history exists (user was on checkout), return them to where they were
+      if (window.history.length > 2) {
+        navigate(-1);
+      } else {
+        // Otherwise send them back to checkout
+        navigate('/checkout', { replace: true });
+      }
       return;
     }
     
     setIsValidAccess(true);
     
-    // Replace the current history entry to prevent going back to checkout
-    window.history.replaceState(null, '', '/success');
-    
-    // Push a new entry to the current page to create a "trap"
-    window.history.pushState(null, '', '/success');
+    // Replace the current history entry and push a trap to prevent accidental back navigation
+    const currentHistState = window.history.state;
+    window.history.replaceState(currentHistState, '', '/success');
+    window.history.pushState(currentHistState, '', '/success');
     
     // Listen for popstate events (back button)
     const handlePopState = (event) => {
-      // Keep user on success page if they try to go back
-      window.history.pushState(null, '', '/success');
+      // If user tries to go back, force them forward again to the trap entry
+      window.history.forward();
     };
     
     window.addEventListener('popstate', handlePopState);
@@ -36,11 +42,20 @@ const PaymentSuccess = () => {
     return () => {
       window.removeEventListener('popstate', handlePopState);
     };
-  }, [navigate]);
+  }, [navigate, location]);
 
-  // Don't render anything if access is invalid
+  // While we are checking access, return a blank modal with spinner instead of null
+  // This avoids the black screen since !isValidAccess starts as false
   if (!isValidAccess) {
-    return null;
+    return (
+      <div className="payment-success-wrapper">
+        <div className="success-modal" style={{ minHeight: '30vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="processing-spinner-container">
+            <div className="processing-spinner"></div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
@@ -49,19 +64,14 @@ const PaymentSuccess = () => {
         <div className="success-logo-outer">
           <div className="success-logo-inner">
             <svg viewBox="0 0 100 100" className="success-svg-logo" xmlns="http://www.w3.org/2000/svg">
-              <text 
-                x="45%" 
-                y="68%" 
-                textAnchor="middle" 
-                fill="white" 
-                fontSize="70" 
-                fontWeight="900" 
-                fontFamily="'Inter', -apple-system, sans-serif"
-                style={{ letterSpacing: '-2px' }}
-              >
-                S
-              </text>
-              <circle cx="68" cy="40" r="5" fill="white" />
+              <path 
+                d="M30 50 L45 65 L70 35" 
+                fill="none" 
+                stroke="white" 
+                strokeWidth="10" 
+                strokeLinecap="round" 
+                strokeLinejoin="round" 
+              />
             </svg>
           </div>
         </div>

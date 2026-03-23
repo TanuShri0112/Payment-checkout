@@ -127,12 +127,12 @@ const Checkout = () => {
 
   const handlePaymentSuccess = (subscriptionData) => {
     // Navigate to success page with subscription details
-    navigate('/success', { state: { subscription: subscriptionData } });
+    navigate('/success', { state: { subscription: subscriptionData, fromPaymentProcess: true } });
   };
 
   const handlePaymentFailed = (errorMessage) => {
     // Navigate to failed page
-    navigate('/failed');
+    navigate('/failed', { state: { fromPaymentProcess: true, error: errorMessage } });
   };
 
   if (loading) {

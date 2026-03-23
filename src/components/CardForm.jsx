@@ -140,7 +140,8 @@ const CardForm = ({ orderId, tilledAccountId, publishableKey, email, customerNam
         state: { 
           orderId, 
           paymentMethodId: paymentMethod.id, 
-          tilledAccountId 
+          tilledAccountId,
+          fromPaymentProcess: true
         },
         replace: true
       });

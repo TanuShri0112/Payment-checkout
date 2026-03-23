@@ -10,23 +10,32 @@ const PaymentFailed = () => {
   const [isValidAccess, setIsValidAccess] = useState(false);
 
   useEffect(() => {
-    // Check if user came from a valid payment flow
-    const hasValidPaymentFlow = sessionStorage.getItem('payment_attempt_completed') === 'true';
+    // Check if user came from a valid payment flow using React Router state
+    // This is the most secure way to prevent URL "cheating"
+    const hasInternalState = location.state && location.state.fromPaymentProcess;
+    
+    // Check if session storage has attempt info
+    const hasValidPaymentFlow = hasInternalState || sessionStorage.getItem('payment_attempt_completed') === 'true';
     const hasRecentOrder = sessionStorage.getItem('last_order_id');
     
-    if (!hasValidPaymentFlow || !hasRecentOrder) {
-      // Redirect to checkout if access is invalid
-      navigate('/checkout', { replace: true });
+    // Stricter check: if they just typed the URL (no state), they shouldn't see this page
+    if (!hasInternalState) {
+      console.warn('Unauthorized access attempts detected for failed page');
+      // If history exists, simply return them to the previous page
+      if (window.history.length > 2) {
+        navigate(-1);
+      } else {
+        navigate('/checkout', { replace: true });
+      }
       return;
     }
     
     setIsValidAccess(true);
     
-    // Get order ID from URL params or state
-    const urlParams = new URLSearchParams(window.location.search);
-    const currentOrderId = urlParams.get('orderId') || 
-                         (location.state?.subscription?.order_id) || 
-                         hasRecentOrder;
+    // Get order ID ONLY from state (preferred) or session storage for payment context
+    const currentOrderId = (location.state?.orderId) || 
+                          (location.state?.subscription?.order_id) || 
+                          sessionStorage.getItem('last_order_id');
     
     if (currentOrderId) {
       setOrderId(currentOrderId);
@@ -37,16 +46,14 @@ const PaymentFailed = () => {
       setAttemptsRemaining(remaining);
     }
 
-    // Replace the current history entry to prevent going back to checkout
-    window.history.replaceState(null, '', '/failed');
+    // Replace the current history entry and push a trap to prevent accidental back navigation
+    const currentHistState = window.history.state;
+    window.history.replaceState(currentHistState, '', '/failed');
+    window.history.pushState(currentHistState, '', '/failed');
     
-    // Push a new entry to the current page to create a "trap"
-    window.history.pushState(null, '', '/failed');
-    
-    // Listen for popstate events (back button)
     const handlePopState = (event) => {
-      // Keep user on failed page if they try to go back
-      window.history.pushState(null, '', '/failed');
+      // If user tries to go back, force them forward again to the trap entry
+      window.history.forward();
     };
     
     window.addEventListener('popstate', handlePopState);
@@ -56,9 +63,18 @@ const PaymentFailed = () => {
     };
   }, [location, navigate]);
 
-  // Don't render anything if access is invalid
+  // While we are checking access, return a blank modal with spinner instead of null
+  // This avoids the black screen since !isValidAccess starts as false
   if (!isValidAccess) {
-    return null;
+    return (
+      <div className="payment-success-wrapper">
+        <div className="success-modal" style={{ minHeight: '30vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div className="processing-spinner-container">
+            <div className="processing-spinner"></div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const handleTryAgain = () => {

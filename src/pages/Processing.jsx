@@ -13,20 +13,34 @@ const Processing = () => {
     setHasStarted(true);
 
     const confirmPayment = async () => {
-      // Get data from location state or URL params as fallback
       const state = location.state || {};
-      const urlParams = new URLSearchParams(window.location.search);
-      
-      const orderId = state.orderId || urlParams.get('orderId');
-      const paymentMethodId = state.paymentMethodId || urlParams.get('paymentMethodId');
-      const tilledAccountId = state.tilledAccountId || urlParams.get('tilledAccountId');
+      const { orderId, paymentMethodId, tilledAccountId, fromPaymentProcess } = state;
 
-      if (!orderId || !paymentMethodId || !tilledAccountId) {
-        console.error('Missing required payment parameters:', { orderId, paymentMethodId, tilledAccountId });
-        // Give it a tiny delay so the user sees the processing state briefly
-        setTimeout(() => navigate('/failed', { replace: true }), 1500);
+      if (!fromPaymentProcess || !orderId || !paymentMethodId || !tilledAccountId) {
+        console.error('Invalid access to processing page or missing parameters');
+        // No trap here, just send them back
+        if (window.history.length > 2) {
+          navigate(-1);
+        } else {
+          navigate('/checkout', { replace: true });
+        }
         return;
       }
+
+      // If authorized, NOW create the history trap to prevent back button during processing
+      const currentState = window.history.state;
+      window.history.replaceState(currentState, '', '/processing');
+      window.history.pushState(currentState, '', '/processing');
+
+      const handlePopState = (event) => {
+        // If user tries to go back, force them forward again to the trap entry
+        window.history.forward();
+      };
+
+      window.addEventListener('popstate', handlePopState);
+      
+      // Store the removal function in a way we can cleanup later
+      window._temp_remove_trap = () => window.removeEventListener('popstate', handlePopState);
 
       try {
         const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
@@ -45,17 +59,23 @@ const Processing = () => {
 
         const result = await response.json();
 
-        // Ensure user sees the processing state for at least 1.5 seconds for a smooth transition
+        // Ensure user sees the processing state for at least 1.5 seconds
         setTimeout(() => {
           if (result.success) {
             navigate('/success', { 
-              state: { subscription: result.data },
+              state: { 
+                subscription: result.data,
+                fromPaymentProcess: true 
+              },
               replace: true 
             });
           } else {
             const errorMsg = result.error || result.message || 'Payment failed';
             navigate('/failed', { 
-              state: { error: errorMsg },
+              state: { 
+                error: errorMsg,
+                fromPaymentProcess: true 
+              },
               replace: true 
             });
           }
@@ -63,11 +83,21 @@ const Processing = () => {
 
       } catch (err) {
         console.error('Processing error:', err);
-        setTimeout(() => navigate('/failed', { replace: true }), 1500);
+        setTimeout(() => navigate('/failed', { 
+          state: { fromPaymentProcess: true },
+          replace: true 
+        }), 1500);
       }
     };
 
     confirmPayment();
+
+    return () => {
+      if (window._temp_remove_trap) {
+        window._temp_remove_trap();
+        delete window._temp_remove_trap;
+      }
+    };
   }, [location, navigate, hasStarted]);
 
   return (
