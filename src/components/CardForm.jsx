@@ -134,17 +134,31 @@ const CardForm = ({ orderId, tilledAccountId, publishableKey, email, customerNam
       // Store checkout metadata for safety
       sessionStorage.setItem('last_order_id', orderId);
       sessionStorage.setItem('payment_attempt_completed', 'true');
-
-      // Navigate to processing page for backend confirmation
-      navigate('/processing', { 
-        state: { 
-          orderId, 
-          paymentMethodId: paymentMethod.id, 
-          tilledAccountId,
-          fromPaymentProcess: true
+      
+      // 2. Confirm to our Backend
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+      const response = await fetch(`${apiBaseUrl}/api/payments/confirm`, {
+        method: 'POST',
+        headers: { 
+          'Content-Type': 'application/json',
+          'x-api-key': 'pk_prod_athenaEbook_20b33599828f71b9a04389c43a4c1a194d47169fc6d98f84d608054fa2ecf632'
         },
-        replace: true
+        body: JSON.stringify({
+          orderId: orderId,
+          payment_method_id: paymentMethod.id,
+          tilledAccountId: tilledAccountId
+        })
       });
+
+      const result = await response.json();
+
+      if (result.success) {
+        onPaymentSuccess(result.data);
+      } else {
+        const msg = result.error || result.message || 'Subscription confirmation failed';
+        setError(msg);
+        onPaymentFailed(msg);
+      }
     } catch (err) {
       console.error('Payment error:', err);
       setError(err.message || 'An error occurred during payment');
