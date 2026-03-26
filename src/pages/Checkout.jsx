@@ -29,6 +29,77 @@ const Checkout = () => {
           if (!currentAttempts) {
             sessionStorage.setItem(attemptKey, '0');
           }
+
+          // NEW: Check payment status before proceeding
+          const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+          console.log('Checking payment status for orderId:', orderId);
+          
+          try {
+            const statusResponse = await fetch(`${apiBaseUrl}/api/payments/status`, {
+              method: 'POST',
+              headers: { 
+                'Content-Type': 'application/json',
+                'x-api-key': 'pk_prod_athenaEbook_20b33599828f71b9a04389c43a4c1a194d47169fc6d98f84d608054fa2ecf632'
+              },
+              body: JSON.stringify({
+                orderId: orderId
+              })
+            });
+
+            if (statusResponse.ok) {
+              const statusResult = await statusResponse.json();
+              console.log('Payment status response:', statusResult);
+              
+              const orderStatus = statusResult.status?.toUpperCase();
+              
+              // Handle different payment statuses
+              switch (orderStatus) {
+                case 'PAID':
+                  // Order is already paid - redirect to success page
+                  console.log('Order already paid, redirecting to success page');
+                  navigate('/success', { 
+                    state: { 
+                      subscription: statusResult.data || { order_id: orderId },
+                      fromPaymentProcess: true 
+                    },
+                    replace: true 
+                  });
+                  return;
+                  
+                case 'FAILED':
+                case 'CANCELLED':
+                  // Order failed or was cancelled - redirect to failed page
+                  console.log(`Order status is ${orderStatus}, redirecting to failed page`);
+                  navigate('/failed', { 
+                    state: { 
+                      error: `Order ${orderStatus.toLowerCase()}. Please try again.`,
+                      fromPaymentProcess: true 
+                    },
+                    replace: true 
+                  });
+                  return;
+                  
+                case 'NOT_FOUND':
+                  // Order not found - show invalid checkout
+                  console.log('Order not found, showing invalid checkout');
+                  setError('Invalid checkout: Order not found in system.');
+                  setLoading(false);
+                  return;
+                  
+                case 'CREATED':
+                case 'PENDING':
+                default:
+                  // For CREATED, PENDING, or any other status, continue with normal checkout flow
+                  console.log(`Payment status is ${orderStatus || 'unknown'}, continuing with checkout`);
+                  break;
+              }
+            } else {
+              console.warn('Failed to check payment status, continuing with normal flow');
+            }
+          } catch (statusErr) {
+            console.error('Error checking payment status:', statusErr);
+            // Continue with normal flow if status check fails
+          }
         }
         
         // Data we might already have from the URL
@@ -123,7 +194,7 @@ const Checkout = () => {
     };
 
     fetchCheckoutSession();
-  }, []);
+  }, [navigate]);
 
   const handlePaymentSuccess = (subscriptionData) => {
     // Navigate to success page with subscription details
@@ -179,6 +250,75 @@ const Checkout = () => {
       </div>
     );
   }
+
+  const checkPaymentStatus = async () => {
+    try {
+      const orderId = sessionData.order_id;
+      const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+      const statusResponse = await fetch(`${apiBaseUrl}/api/orders/${orderId}/status`, {
+        method: 'GET',
+        headers: { 
+          'Content-Type': 'application/json',
+        },
+      });
+
+      if (statusResponse.ok) {
+        const statusResult = await statusResponse.json();
+        console.log('Payment status response:', statusResult);
+        
+        const orderStatus = statusResult.status?.toUpperCase();
+        
+        // Handle different payment statuses
+        switch (orderStatus) {
+          case 'PAID':
+            // Order is already paid - redirect to success page
+            console.log('Order already paid, redirecting to success page');
+            navigate('/success', { 
+              state: { 
+                subscription: statusResult.data || { order_id: orderId },
+                fromPaymentProcess: true 
+              },
+              replace: true 
+            });
+            return;
+            
+          case 'FAILED':
+          case 'CANCELLED':
+            // Order failed or was cancelled - show error and redirect to failed page
+            console.log(`Order status is ${orderStatus}, redirecting to failed page`);
+            navigate('/failed', { 
+              state: { 
+                error: `Order ${orderStatus.toLowerCase()}. Please try again.`,
+                fromPaymentProcess: true 
+              },
+              replace: true 
+            });
+            return;
+            
+          case 'NOT_FOUND':
+            // Order not found - show invalid checkout
+            console.log('Order not found, showing invalid checkout');
+            setError('Invalid checkout: Order not found in system.');
+            setLoading(false);
+            return;
+            
+          case 'CREATED':
+          case 'PENDING':
+          default:
+            // For CREATED, PENDING, or any other status, continue with normal checkout flow
+            console.log(`Payment status is ${orderStatus || 'unknown'}, continuing with checkout`);
+            break;
+        }
+      } else {
+        // If status check fails, log error but continue with normal flow
+        console.warn('Failed to check payment status, continuing with normal flow');
+      }
+    } catch (err) {
+      console.error('Error checking payment status:', err);
+    }
+  };
+
+  checkPaymentStatus();
 
   return (
     <div className="checkout-container">
