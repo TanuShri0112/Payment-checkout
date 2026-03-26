@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import '../styles/success.css';
+import { validatePaymentState, clearNavigationState } from '../utils/navigationState';
 
 const PaymentSuccess = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isValidAccess, setIsValidAccess] = useState(false);
 
   useEffect(() => {
-    // Check if user came from a valid payment flow using React Router state
-    // This is the most secure way to prevent URL "cheating" or direct path access
-    const hasInternalState = location.state && location.state.fromPaymentProcess;
+    // Use robust state validation with fallback to sessionStorage
+    const stateValidation = validatePaymentState(location.state, ['fromPaymentProcess']);
     
-    // We strictly require internal state to show this page
-    if (!hasInternalState) {
+    if (!stateValidation.valid) {
       console.warn('Unauthorized access attempts detected for success page');
       // If history exists (user was on checkout), return them to where they were
       if (window.history.length > 2) {
@@ -24,7 +24,13 @@ const PaymentSuccess = () => {
       return;
     }
     
-    setIsValidAccess(true);
+    // Clear the stored state since we've successfully validated access
+    if (stateValidation.source === 'session') {
+      clearNavigationState();
+    }
+    
+    // Use setTimeout to defer state update and avoid synchronous setState
+    setTimeout(() => setIsValidAccess(true), 0);
     
     // Replace the current history entry and push a trap to prevent accidental back navigation
     const currentHistState = window.history.state;
@@ -32,7 +38,7 @@ const PaymentSuccess = () => {
     window.history.pushState(currentHistState, '', '/success');
     
     // Listen for popstate events (back button)
-    const handlePopState = (event) => {
+    const handlePopState = () => {
       // If user tries to go back, force them forward again to the trap entry
       window.history.forward();
     };
@@ -42,7 +48,7 @@ const PaymentSuccess = () => {
     return () => {
       window.removeEventListener('popstate', handlePopState);
     };
-  }, [navigate, location]);
+  }, [navigate, location.state]);
 
   // While we are checking access, return a blank modal with spinner instead of null
   // This avoids the black screen since !isValidAccess starts as false
@@ -79,7 +85,7 @@ const PaymentSuccess = () => {
         <div className="success-content">
           <h1 className="success-title">Payment Successful!</h1>
           <p className="success-description">
-            Your payment has been processed. We have emailed you a receipt.
+            Your payment has been processed.
           </p>
         </div>
       </div>
