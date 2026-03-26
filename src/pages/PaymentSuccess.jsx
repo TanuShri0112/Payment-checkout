@@ -1,18 +1,17 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import '../styles/success.css';
+import { validatePaymentState, clearNavigationState } from '../utils/navigationState';
 
 const PaymentSuccess = () => {
   const navigate = useNavigate();
   const [isValidAccess, setIsValidAccess] = useState(false);
 
   useEffect(() => {
-    // Check if user came from a valid payment flow using React Router state
-    // This is the most secure way to prevent URL "cheating" or direct path access
-    const hasInternalState = location.state && location.state.fromPaymentProcess;
+    // Use robust state validation with fallback to sessionStorage
+    const stateValidation = validatePaymentState(location.state, ['fromPaymentProcess']);
     
-    // We strictly require internal state to show this page
-    if (!hasInternalState) {
+    if (!stateValidation.valid) {
       console.warn('Unauthorized access attempts detected for success page');
       // If history exists (user was on checkout), return them to where they were
       if (window.history.length > 2) {
@@ -22,6 +21,11 @@ const PaymentSuccess = () => {
         navigate('/checkout', { replace: true });
       }
       return;
+    }
+    
+    // Clear the stored state since we've successfully validated access
+    if (stateValidation.source === 'session') {
+      clearNavigationState();
     }
     
     setIsValidAccess(true);

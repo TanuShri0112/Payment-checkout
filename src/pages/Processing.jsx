@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import '../styles/success.css';
+import { saveNavigationState } from '../utils/navigationState';
 
 const Processing = () => {
   const navigate = useNavigate();
@@ -62,20 +63,27 @@ const Processing = () => {
         // Ensure user sees the processing state for at least 1.5 seconds
         setTimeout(() => {
           if (result.success) {
+            const successState = { 
+              subscription: result.data,
+              fromPaymentProcess: true 
+            };
+            // Save state to sessionStorage as fallback
+            saveNavigationState(successState);
+            
             navigate('/success', { 
-              state: { 
-                subscription: result.data,
-                fromPaymentProcess: true 
-              },
+              state: successState,
               replace: true 
             });
           } else {
-            const errorMsg = result.error || result.message || 'Payment failed';
+            const errorState = { 
+              error: result.error || result.message || 'Payment failed',
+              fromPaymentProcess: true 
+            };
+            // Save state to sessionStorage as fallback
+            saveNavigationState(errorState);
+            
             navigate('/failed', { 
-              state: { 
-                error: errorMsg,
-                fromPaymentProcess: true 
-              },
+              state: errorState,
               replace: true 
             });
           }
@@ -83,8 +91,15 @@ const Processing = () => {
 
       } catch (err) {
         console.error('Processing error:', err);
+        const errorState = { 
+          error: err.message || 'Payment processing failed',
+          fromPaymentProcess: true 
+        };
+        // Save state to sessionStorage as fallback
+        saveNavigationState(errorState);
+        
         setTimeout(() => navigate('/failed', { 
-          state: { fromPaymentProcess: true },
+          state: errorState,
           replace: true 
         }), 1500);
       }
