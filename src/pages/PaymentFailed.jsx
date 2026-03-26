@@ -7,7 +7,6 @@ const PaymentFailed = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const [attemptsRemaining, setAttemptsRemaining] = useState(2);
-  const [orderId, setOrderId] = useState(null);
   const [isValidAccess, setIsValidAccess] = useState(false);
 
   useEffect(() => {
@@ -30,7 +29,8 @@ const PaymentFailed = () => {
       clearNavigationState();
     }
     
-    setIsValidAccess(true);
+    // Use setTimeout to defer state update and avoid synchronous setState
+    setTimeout(() => setIsValidAccess(true), 0);
     
     // Get order ID ONLY from state (preferred) or session storage for payment context
     const currentOrderId = (location.state?.orderId) || 
@@ -38,12 +38,11 @@ const PaymentFailed = () => {
                           sessionStorage.getItem('last_order_id');
     
     if (currentOrderId) {
-      setOrderId(currentOrderId);
       const attemptKey = `payment_attempts_${currentOrderId}`;
       const currentAttempts = parseInt(sessionStorage.getItem(attemptKey) || '0');
       const maxAttempts = 3;
       const remaining = Math.max(0, maxAttempts - currentAttempts);
-      setAttemptsRemaining(remaining);
+      setTimeout(() => setAttemptsRemaining(remaining), 0);
     }
 
     // Replace the current history entry and push a trap to prevent accidental back navigation
@@ -51,7 +50,7 @@ const PaymentFailed = () => {
     window.history.replaceState(currentHistState, '', '/failed');
     window.history.pushState(currentHistState, '', '/failed');
     
-    const handlePopState = (event) => {
+    const handlePopState = () => {
       // If user tries to go back, force them forward again to the trap entry
       window.history.forward();
     };
@@ -61,7 +60,7 @@ const PaymentFailed = () => {
     return () => {
       window.removeEventListener('popstate', handlePopState);
     };
-  }, [location, navigate]);
+  }, [navigate, location.state]);
 
   // While we are checking access, return a blank modal with spinner instead of null
   // This avoids the black screen since !isValidAccess starts as false

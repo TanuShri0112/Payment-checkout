@@ -5,6 +5,7 @@ import { validatePaymentState, clearNavigationState } from '../utils/navigationS
 
 const PaymentSuccess = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isValidAccess, setIsValidAccess] = useState(false);
 
   useEffect(() => {
@@ -28,7 +29,8 @@ const PaymentSuccess = () => {
       clearNavigationState();
     }
     
-    setIsValidAccess(true);
+    // Use setTimeout to defer state update and avoid synchronous setState
+    setTimeout(() => setIsValidAccess(true), 0);
     
     // Replace the current history entry and push a trap to prevent accidental back navigation
     const currentHistState = window.history.state;
@@ -36,7 +38,7 @@ const PaymentSuccess = () => {
     window.history.pushState(currentHistState, '', '/success');
     
     // Listen for popstate events (back button)
-    const handlePopState = (event) => {
+    const handlePopState = () => {
       // If user tries to go back, force them forward again to the trap entry
       window.history.forward();
     };
@@ -46,7 +48,7 @@ const PaymentSuccess = () => {
     return () => {
       window.removeEventListener('popstate', handlePopState);
     };
-  }, [navigate, location]);
+  }, [navigate, location.state]);
 
   // While we are checking access, return a blank modal with spinner instead of null
   // This avoids the black screen since !isValidAccess starts as false
@@ -83,7 +85,7 @@ const PaymentSuccess = () => {
         <div className="success-content">
           <h1 className="success-title">Payment Successful!</h1>
           <p className="success-description">
-            Your payment has been processed. We have emailed you a receipt.
+            Your payment has been processed.
           </p>
         </div>
       </div>

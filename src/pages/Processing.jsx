@@ -11,7 +11,8 @@ const Processing = () => {
   useEffect(() => {
     // Only run this once to avoid double confirmation
     if (hasStarted) return;
-    setHasStarted(true);
+    // Use setTimeout to defer state update and avoid synchronous setState
+    setTimeout(() => setHasStarted(true), 0);
 
     const confirmPayment = async () => {
       const state = location.state || {};
@@ -33,7 +34,7 @@ const Processing = () => {
       window.history.replaceState(currentState, '', '/processing');
       window.history.pushState(currentState, '', '/processing');
 
-      const handlePopState = (event) => {
+      const handlePopState = () => {
         // If user tries to go back, force them forward again to the trap entry
         window.history.forward();
       };
