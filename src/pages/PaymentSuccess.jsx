@@ -85,7 +85,7 @@ const PaymentSuccess = () => {
         <div className="success-content">
           <h1 className="success-title">Payment Successful!</h1>
           <p className="success-description">
-            Your payment has been processed.
+            Your payment has been processed successfully. You can now return to your dashboard.
           </p>
         </div>
       </div>
