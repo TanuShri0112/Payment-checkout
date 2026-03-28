@@ -62,7 +62,7 @@ const Checkout = () => {
 
         if (productId && planId && userId && email) {
           // Hardcoded for testing as requested
-          const apiKey = 'pk_prod_athenaEbook_20b33599828f71b9a04389c43a4c1a194d47169fc6d98f84d608054fa2ecf632';
+          const apiKey = 'pk_prod_lmsathena_f929699db783a2e437c7ee259143924d2c66a602213f1ba40cc4d967121315df';
           
           console.log('Initiating payment session for:', { productId, planId });
           
