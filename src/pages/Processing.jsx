@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import '../styles/success.css';
-import { saveNavigationState } from '../utils/navigationState';
+import { saveNavigationState, validatePaymentState } from '../utils/navigationState';
 
 const Processing = () => {
   const navigate = useNavigate();
@@ -15,8 +15,37 @@ const Processing = () => {
     setTimeout(() => setHasStarted(true), 0);
 
     const confirmPayment = async () => {
-      const state = location.state || {};
-      const { orderId, paymentMethodId, tilledAccountId, productId, fromPaymentProcess } = state;
+      const stateValidation = validatePaymentState(location.state, [
+        'fromPaymentProcess',
+        'orderId',
+        'paymentMethodId',
+        'tilledAccountId',
+      ]);
+
+      const state = stateValidation.valid ? stateValidation.data : (location.state || {});
+
+      // Fallbacks for when router state is lost (refresh/new tab)
+      const urlParams = new URLSearchParams(window.location.search);
+      const fallbackProductId =
+        urlParams.get('productId') ||
+        (() => {
+          try {
+            const originalUrl = sessionStorage.getItem('original_checkout_url');
+            if (!originalUrl) return null;
+            const originalParams = new URL(originalUrl).searchParams;
+            return originalParams.get('productId');
+          } catch {
+            return null;
+          }
+        })();
+
+      const {
+        orderId,
+        paymentMethodId,
+        tilledAccountId,
+        fromPaymentProcess,
+      } = state;
+      const productId = state.productId || fallbackProductId;
 
       if (!fromPaymentProcess || !orderId || !paymentMethodId || !tilledAccountId) {
         console.error('Invalid access to processing page or missing parameters');

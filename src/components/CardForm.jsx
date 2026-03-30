@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { saveNavigationState } from '../utils/navigationState';
 
 const CardForm = ({ orderId, tilledAccountId, publishableKey, email, customerName, productId, onPaymentSuccess, onPaymentFailed }) => {
   const navigate = useNavigate();
@@ -134,6 +135,15 @@ const CardForm = ({ orderId, tilledAccountId, publishableKey, email, customerNam
       // Store checkout metadata for safety
       sessionStorage.setItem('last_order_id', orderId);
       sessionStorage.setItem('payment_attempt_completed', 'true');
+
+      // Persist state so refresh/new-tab doesn't drop critical fields (esp productId)
+      saveNavigationState({
+        orderId,
+        paymentMethodId: paymentMethod.id,
+        tilledAccountId,
+        productId,
+        fromPaymentProcess: true,
+      });
       
       // Navigate to processing page for backend confirmation
       navigate('/processing', { 
