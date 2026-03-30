@@ -8,7 +8,8 @@ const Checkout = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [sessionData, setSessionData] = useState(null); // New state for session data
+  const [sessionData, setSessionData] = useState(null);
+  const [productId, setProductId] = useState(null);
 
   useEffect(() => {
     const fetchCheckoutSession = async () => {
@@ -31,7 +32,8 @@ const Checkout = () => {
           }
         }
         
-        // Data we might already have from the URL
+        const productIdFromUrl = urlParams.get('productId');
+        setProductId(productIdFromUrl);
         const publishableKeyFromUrl = urlParams.get('publishableKey');
         const tilledAccountIdFromUrl = urlParams.get('tilledAccountId');
         const amountFromUrl = urlParams.get('amount');
@@ -49,6 +51,7 @@ const Checkout = () => {
             company_name: 'Athena LMS',
             email: urlParams.get('email'),
             userId: urlParams.get('userId'),
+            productId: productIdFromUrl
           });
           setLoading(false);
           return;
@@ -61,8 +64,8 @@ const Checkout = () => {
         const email = urlParams.get('email');
 
         if (productId && planId && userId && email) {
-          // Hardcoded for testing as requested
-          const apiKey = 'pk_prod_lmsathena_f929699db783a2e437c7ee259143924d2c66a602213f1ba40cc4d967121315df';
+          // API key from environment variable
+          const apiKey = import.meta.env.VITE_API_KEY;
           
           console.log('Initiating payment session for:', { productId, planId });
           
@@ -110,6 +113,7 @@ const Checkout = () => {
             company_name: 'Athena LMS',
             email: email,
             userId: userId,
+            productId: productIdFromUrl
           });
         } else {
           setError('Invalid checkout URL: Missing required parameters.');
@@ -251,6 +255,7 @@ const Checkout = () => {
                 publishableKey={sessionData.publishableKey}
                 email={sessionData.email}
                 customerName={sessionData.customer_name || 'Customer'}
+                productId={sessionData.productId}
                 onPaymentSuccess={handlePaymentSuccess}
                 onPaymentFailed={handlePaymentFailed}
               />

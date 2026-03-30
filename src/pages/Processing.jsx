@@ -16,7 +16,7 @@ const Processing = () => {
 
     const confirmPayment = async () => {
       const state = location.state || {};
-      const { orderId, paymentMethodId, tilledAccountId, fromPaymentProcess } = state;
+      const { orderId, paymentMethodId, tilledAccountId, productId, fromPaymentProcess } = state;
 
       if (!fromPaymentProcess || !orderId || !paymentMethodId || !tilledAccountId) {
         console.error('Invalid access to processing page or missing parameters');
@@ -55,7 +55,8 @@ const Processing = () => {
           body: JSON.stringify({
             orderId,
             payment_method_id: paymentMethodId,
-            tilledAccountId
+            tilledAccountId,
+            productId
           })
         });
 

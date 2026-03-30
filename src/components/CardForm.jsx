@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const CardForm = ({ orderId, tilledAccountId, publishableKey, email, customerName, onPaymentSuccess, onPaymentFailed }) => {
+const CardForm = ({ orderId, tilledAccountId, publishableKey, email, customerName, productId, onPaymentSuccess, onPaymentFailed }) => {
   const navigate = useNavigate();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -141,6 +141,7 @@ const CardForm = ({ orderId, tilledAccountId, publishableKey, email, customerNam
           orderId, 
           paymentMethodId: paymentMethod.id, 
           tilledAccountId,
+          productId,
           fromPaymentProcess: true
         },
         replace: true
