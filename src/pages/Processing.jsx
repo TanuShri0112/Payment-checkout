@@ -50,7 +50,7 @@ const Processing = () => {
         const response = await fetch(`${apiBaseUrl}/api/payments/confirm`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json', 
+            'Content-Type': 'application/json',
             'x-api-key': apiKey
           },
           body: JSON.stringify({
