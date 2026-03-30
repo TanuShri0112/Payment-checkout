@@ -46,11 +46,12 @@ const Processing = () => {
 
       try {
         const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+        const apiKey = import.meta.env.VITE_API_KEY;
         const response = await fetch(`${apiBaseUrl}/api/payments/confirm`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            'x-api-key': 'pk_prod_lmsathena_f929699db783a2e437c7ee259143924d2c66a602213f1ba40cc4d967121315df'
+            'Content-Type': 'application/json', 
+            'x-api-key': apiKey
           },
           body: JSON.stringify({
             orderId,
