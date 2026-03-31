@@ -22,15 +22,43 @@ const Checkout = () => {
         const urlParams = new URLSearchParams(window.location.search);
         const orderId = urlParams.get('orderId');
         
-        if (orderId) {
-          const attemptKey = `payment_attempts_${orderId}`;
-          const currentAttempts = sessionStorage.getItem(attemptKey);
-          
-          // Only initialize if no attempts tracked yet (fresh checkout session)
-          if (!currentAttempts) {
-            sessionStorage.setItem(attemptKey, '0');
-          }
+      if (orderId) {
+        const attemptKey = `payment_attempts_${orderId}`;
+        const currentAttempts = sessionStorage.getItem(attemptKey);
+
+        // Only initialize if no attempts tracked yet (fresh checkout session)
+        if (!currentAttempts) {
+          sessionStorage.setItem(attemptKey, '0');
         }
+
+        // Block re-entry if this order has already been completed
+        try {
+          const apiBaseUrl = import.meta.env.VITE_API_BASE_URL || '';
+          const apiKey = import.meta.env.VITE_API_KEY;
+          const statusRes = await fetch(`${apiBaseUrl}/api/payments/status?orderId=${orderId}`, {
+            headers: { 'x-api-key': apiKey }
+          });
+
+          if (statusRes.ok) {
+            const { success, data } = await statusRes.json();
+
+            if (success && data?.orderStatus === 'completed') {
+              navigate('/success', {
+                state: {
+                  subscription: data,
+                  fromPaymentProcess: true
+                },
+                replace: true
+              });
+              return;
+            }
+          }
+          // 400, 404, 500 — all fall through silently to normal checkout
+        } catch (statusErr) {
+          // Network failure — non-blocking, proceed with checkout normally
+          console.warn('Order status check failed, proceeding with checkout:', statusErr.message);
+        }
+      }
         
         const productIdFromUrl = urlParams.get('productId');
         setProductId(productIdFromUrl);
